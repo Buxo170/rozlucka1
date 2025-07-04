@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tréning na dokonalého manžela</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-top: 2rem;
+      color: #333;
+      padding: 1rem;
+      background-color: #ffffff;
+      border-radius: 10px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.5;
+    }
+    .result .task-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #007bff;
+      display: block;
+    }
+    .input-section {
+      margin-top: 2rem;
+    }
+    input[type="text"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 250px;
+      margin-right: 0.5rem;
+    }
+    .clue-list {
+      margin-top: 2rem;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .clue-list h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .clue-list ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .clue-list li {
+      background-color: #e9ecef;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tréning na dokonalého manžela</h1>
+  <p>Stlač tlačidlo a zisti svoju výzvu. Ďalšia sa odomkne až po zadanej indícii! <br>Získaj čo najviac indícií a <strong>odhaľ miesto rozlúčky so slobodou!</strong></p>
+
+  <button onclick="revealNextTask()" id="drawButton">Vygeneruj úlohu</button>
+
+  <div class="result" id="result"></div>
+
+  <div class="input-section" id="unlockSection" style="display: none;">
+    <p>Zadaj indíciu:</p>
+    <input type="text" id="clueInput" placeholder="Názov indície">
+    <button onclick="unlockNext()">Odomkni ďalšiu úlohu</button>
+  </div>
+
+  <div class="clue-list" id="clueList">
+    <h2>🔎 Získané indície:</h2>
+    <ul id="clues"></ul>
+  </div>
+
+  <script>
+    const tasks = [
+      "<span class='task-title'>🚀 Poďme na to!</span> 1. Video videné 2. Tričko oblečené 3. Fľaša otvorená 4. Na zdravie",
+      "<span class='task-title'>📣 Obdivuhodná odvaha</span> Postav sa pri cestu s pripraveným transparentom a získaj 10 zatrúbení!",
+      "<span class='task-title'>🔁 Tréning správnych odpovedí</span> Povedz 100× za sebou: ‘Áno, láska.’ Pomaly sa prechádzaj a tvár sa, že si to opakuješ, aby si si to dobre zapamätal.",
+      "<span class='task-title'>📸 Instagramová výzva</span> Popros niekoho, aby ťa odfotil v rozlúčkovom tričku s fľašou v ruke. Pridaj to na svoj Instagram Story s textom: Budem sa ženiť.",
+      "<span class='task-title'>📹 Výkrik lásky</span> Postav sa na verejné miesto, zapni video a urob túto misiu: Začni úplne tichým šepotom: ‘Pamela, milujem ťa.’ Postupne zvyšuj hlasitosť v každej ďalšej verzii: ‘Pamela, milujem ťa.’ (normálne), ‘PAMELA, MILUJEM ŤA!’ (nahlas), ‘PAAAAMEEEEELAAAAAAA!!! MILUJEM ŤAAAAA!!!’ (maximálny rev). Video jej pošli, aby vedela, ako veľmi ju miluješ.",
+      "<span class='task-title'>💃 Svadobný tanec na verejnosti</span> Tancuj 30 sekúnd svadobný tanec – s neviditeľnou partnerkou alebo s niekým, koho oslovíš.",
+      "<span class='task-title'>💍 Rady do manželstva</span> Spýtaj sa 3 náhodných okoloidúcich: ‘Zdravím, práve mám výcvik na dokonalého manžela. Máte 30 sekúnd, aby ste mi dali najlepšiu radu do manželstva’",
+      "<span class='task-title'>🧘 Trpezlivosť</span> Stoj bez slova 5 minút.",
+      "<span class='task-title'>BONUS: 🗣️ Tréning komplimentov</span> Zastav cudziu ženu a povedz: ‘Prepáčte, potrebujem trénovať komplimenty. Môžem vám povedať tri veci, ktoré na vás obdivujem?’"
+    ];
+
+    const validPasswords = [
+      "kúpele",
+      "srdce",
+      "bunker",
+      "chorvátsko",
+      "včela",
+      "šošovica",
+      "zlobor",
+      "malina"
+    ];
+
+    let currentTaskIndex = parseInt(localStorage.getItem("currentTaskIndex")) || 0;
+    let loadedClues = JSON.parse(localStorage.getItem("savedClues") || "[]");
+
+    function revealNextTask() {
+      if (currentTaskIndex >= tasks.length) {
+        document.getElementById("result").innerText = "GRATULUJEME! Úspešne si zvládol tréning na dokonalého manžela. Už vieš, kde je tvoja rozlúčka so slobodou?";
+        document.getElementById("drawButton").disabled = true;
+        return;
+      }
+
+      document.getElementById("result").innerHTML = tasks[currentTaskIndex];
+
+      if (currentTaskIndex === 0) {
+        currentTaskIndex++;
+        localStorage.setItem("currentTaskIndex", currentTaskIndex);
+      } else {
+        document.getElementById("unlockSection").style.display = "block";
+        document.getElementById("drawButton").disabled = true;
+      }
+    }
+
+    function unlockNext() {
+      const clue = document.getElementById("clueInput").value.trim().toLowerCase();
+      if (validPasswords.includes(clue)) {
+        if (!loadedClues.includes(clue)) {
+          addClueToList(clue);
+        }
+        document.getElementById("result").innerText = "Úloha odomknutá. Stlač tlačidlo pre ďalšiu výzvu.";
+        document.getElementById("clueInput").value = "";
+        document.getElementById("unlockSection").style.display = "none";
+        document.getElementById("drawButton").disabled = false;
+      } else {
+        alert("Nesprávny názov indície. Skús znova.");
+      }
+    }
+
+    function addClueToList(clue) {
+      loadedClues.push(clue);
+      localStorage.setItem("savedClues", JSON.stringify(loadedClues));
+      renderClueOnly(clue);
+      currentTaskIndex++;
+      localStorage.setItem("currentTaskIndex", currentTaskIndex);
+    }
+
+    function renderClueOnly(clue) {
+      const clueList = document.getElementById("clues");
+      const li = document.createElement("li");
+      li.textContent = clue;
+      clueList.appendChild(li);
+    }
+
+    window.onload = () => {
+      loadedClues.forEach(clue => renderClueOnly(clue));
+
+      if (currentTaskIndex > 0 && currentTaskIndex <= tasks.length) {
+        document.getElementById("result").innerHTML = tasks[currentTaskIndex - 1];
+        if (currentTaskIndex < tasks.length) {
+          document.getElementById("unlockSection").style.display = "block";
+          document.getElementById("drawButton").disabled = true;
+        }
+      } else if (currentTaskIndex >= tasks.length) {
+        document.getElementById("result").innerText = "Gratulujeme! Úspešne si zvládol tréning na dokonalého manžela! Už vieš kde je tvoja dnešná rozlúčka so slobodou?";
+        document.getElementById("drawButton").disabled = true;
+      }
+    }
+  </script>
+</body>
+</html>
